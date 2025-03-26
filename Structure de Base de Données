@@ -1,0 +1,117 @@
+CREATE DATABASE gestion_stock;
+USE gestion_stock;
+
+-- Table des articles
+CREATE TABLE articles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reference VARCHAR(50) UNIQUE NOT NULL,
+    designation VARCHAR(100) NOT NULL,
+    prix_achat DECIMAL(10,2) NOT NULL,
+    prix_vente DECIMAL(10,2) NOT NULL,
+    quantite INT NOT NULL DEFAULT 0,
+    seuil_alerte INT DEFAULT 5,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_modification DATETIME ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Table des clients
+CREATE TABLE clients (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    adresse TEXT,
+    telephone VARCHAR(20),
+    email VARCHAR(100),
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des fournisseurs
+CREATE TABLE fournisseurs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    adresse TEXT,
+    telephone VARCHAR(20),
+    email VARCHAR(100),
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des devis
+CREATE TABLE devis (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_devis VARCHAR(20) UNIQUE NOT NULL,
+    client_id INT NOT NULL,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_validite DATE,
+    statut ENUM('en_attente', 'accepte', 'refuse') DEFAULT 'en_attente',
+    remise DECIMAL(5,2) DEFAULT 0,
+    total_ht DECIMAL(10,2),
+    total_ttc DECIMAL(10,2),
+    FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+-- Table des lignes de devis
+CREATE TABLE devis_lignes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    devis_id INT NOT NULL,
+    article_id INT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (devis_id) REFERENCES devis(id),
+    FOREIGN KEY (article_id) REFERENCES articles(id)
+);
+
+-- Table des factures
+CREATE TABLE factures (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_facture VARCHAR(20) UNIQUE NOT NULL,
+    client_id INT NOT NULL,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_echeance DATE,
+    statut ENUM('impayee', 'payee', 'partiellement_payee') DEFAULT 'impayee',
+    remise DECIMAL(5,2) DEFAULT 0,
+    total_ht DECIMAL(10,2),
+    total_ttc DECIMAL(10,2),
+    FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+-- Table des lignes de facture
+CREATE TABLE factures_lignes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    facture_id INT NOT NULL,
+    article_id INT NOT NULL,
+    quantite INT NOT NULL,
+    prix_unitaire DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (facture_id) REFERENCES factures(id),
+    FOREIGN KEY (article_id) REFERENCES articles(id)
+);
+
+-- Table des bons de livraison
+CREATE TABLE livraisons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_bon VARCHAR(20) UNIQUE NOT NULL,
+    client_id INT NOT NULL,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    statut ENUM('preparation', 'expedie', 'livre') DEFAULT 'preparation',
+    FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+-- Table des lignes de bon de livraison
+CREATE TABLE livraisons_lignes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    livraison_id INT NOT NULL,
+    article_id INT NOT NULL,
+    quantite INT NOT NULL,
+    FOREIGN KEY (livraison_id) REFERENCES livraisons(id),
+    FOREIGN KEY (article_id) REFERENCES articles(id)
+);
+
+-- Table des mouvements de stock
+CREATE TABLE mouvements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    article_id INT NOT NULL,
+    type ENUM('entree', 'sortie') NOT NULL,
+    quantite INT NOT NULL,
+    date_mouvement DATETIME DEFAULT CURRENT_TIMESTAMP,
+    document_type ENUM('facture', 'devis', 'livraison', 'inventaire', 'autre'),
+    document_id INT,
+    FOREIGN KEY (article_id) REFERENCES articles(id)
+);
